@@ -167,15 +167,15 @@ def main():
         elif command == "hello":
             print("How can I help you?")
         elif command == "add":
-            print(record.add_phone(*args))
+            print(record.add_phone(args))
         elif command == "change":
-            print(record.edit_phone(*args))
+            print(record.edit_phone(args))
         elif command == "phone":
-            print(record.add_phone(*args))
+            print(record.add_phone(args))
         elif command == "add-birthday":
-            print(record.add_birthday(name, birthday))
+            print(record.add_birthday(args))
         elif command == "show-birthday":
-            print(record.show_birthday(name))
+            print(record.show_birthday(args))
         elif command == "birthdays":
             print(record.get_birthdays_per_week())
         elif command == "all":
