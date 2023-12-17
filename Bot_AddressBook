@@ -2,6 +2,7 @@ from collections import UserDict, defaultdict
 from datetime import datetime, timedelta
 
 
+
 class Field: # Base class for record fields
     def __init__(self, value):
         self.value = value
@@ -30,29 +31,44 @@ class Birthday(Field): # for colleagues' birthday
             self.birthday = birthday
 
     def validation(self, birthday):
-        datetime.strptime(birthday, '%d.%m.%Y')
-        return True
+        try:
+            datetime.strptime(birthday, '%d.%m.%Y')
+            return True
+        except ValueError:
+            return False
 
 
 class Record: # for storing information about a contact
-    def __init__(self, name):
+    def __init__(self, name, birthday=None):
         self.name = Name(name)
         self.phones = []
+        self.birthday = birthday
 
     def __str__(self):
         return f"Contact name: {self.name.name}, phones: {'; '.join(p.phone for p in self.phones)}"
 
     def add_phone(self, phone):
-        phone = Phone(phone)
-        phone.validation()
-        self.phones.append(phone)
+        phone_obj = Phone(phone)
+        if phone_obj.validation(phone):
+            self.phones.append(phone_obj)
+            print(f"Phone added for {self.name}: {phone}")
+        else:
+            print("Invalid phone number format. Please use a 10-digit number.")
         
     def add_birthday(self, birthday):
-        self.birthday = Birthday(birthday)
-    
-    def show_birthday(self):
-        return str(self.birthday)
+        try:
+            self.birthday = Birthday(birthday)
+            print(f"Birthday for {self.name.value} added: {self.birthday.birthday}")
+        except ValueError:
+            print("Invalid birthday format. Please use the format DD.MM.YYYY")
 
+    def show_birthday(self):
+        contact = self.data.get(self.name)
+        if contact:
+            return contact.show_birthday()
+        else:
+            return "Contact not found."
+    
     def show_upcoming_birthdays(self):
         return AddressBook.get_birthdays_per_week()
         
@@ -63,11 +79,12 @@ class Record: # for storing information about a contact
                 break
 
     def edit_phone(self, old_phone, edit_phone):
-        for p in self.phones:
-            if p.phone == old_phone:
-                p.phone = edit_phone
-                p.validation()
-                break
+        for phone in self.phones:
+            if phone.phone == old_phone:
+                phone.phone = edit_phone
+                phone.validation(phone.phone)
+                return f"Phone number for {self.name} changed to: {edit_phone}"
+        return f"Phone number {old_phone} not found for {self.name}"
 
     def find_phone(self, number):
         for phone in self.phones:
@@ -77,18 +94,23 @@ class Record: # for storing information about a contact
 
 
 class AddressBook(UserDict): # for storing and managing records.
-    def __init__(self, value):
-        self.value = value
+    def __init__(self):
+        self.contacts = []
 
     def add_record(self, record): # create dictionary "data" (class Record, class Name, value name)
-        self.data[record.name.name] = record
+        self.contacts.append(record)
 
     def find(self, name):
-        return self.data.get(name)
+        for contact in self.contacts:
+            if contact.name == name:
+                return contact
+        return None
 
     def delete(self, name):
-        if name in self.data:
-            del self.data[name]
+        for contact in self.contacts:
+            if contact.name.name == name:
+                self.contacts.remove(contact)
+                break
 
     def get_birthdays_per_week(users):
     
@@ -126,7 +148,7 @@ class AddressBook(UserDict): # for storing and managing records.
 
         return get_sorted_birthdays_per_week(sorted_by_month_day(users))
 
-
+new_book = AddressBook()
 
 def parse_input(user_input):
     """The function takes a string of user input, breaks it into words.
@@ -167,19 +189,48 @@ def main():
         elif command == "hello":
             print("How can I help you?")
         elif command == "add":
-            print(record.add_phone(args))
+            record = Record(*args)
+            new_book.add_record(record)
+            record.add_phone(args[1])
         elif command == "change":
-            print(record.edit_phone(args))
+            if record:
+                print(record.edit_phone(args[0], args[1]))
+            else:
+                print("No contact selected. Use 'add' command to add a contact first.")
         elif command == "phone":
-            print(record.add_phone(args))
+            if new_book.contacts:
+                record = new_book.contacts[0]
+                if record:
+                    if record.phones:
+                        print(f"Phone number for {record.name.value}: {record.phones[0].phone}")
+                    else:
+                        print(f"No phone number found for {record.name.value}")
+                else:
+                    print("No contact selected. Use 'add' command to add a contact first.")
+            else:
+                print("No contacts available. Use 'add' command to add a contact first.")
         elif command == "add-birthday":
-            print(record.add_birthday(args))
+            if new_book.contacts:
+                record = new_book.contacts[0]
+                if record:
+                    if len(args) == 2:
+                        record.add_birthday(args[1])
+                    else:
+                        print("Invalid number of arguments. Use 'add-birthday [name] [birthday]'")
+                else:
+                    print("No contact selected. Use 'add' command to add a contact first.")
+            else:
+                print("No contacts available. Use 'add' command to add a contact first.")
         elif command == "show-birthday":
-            print(record.show_birthday(args))
+            contact = new_book.find(args[0])
+            if contact:
+                print(contact.show_birthday())
+            else:
+                print("Contact not found.")
         elif command == "birthdays":
-            print(record.get_birthdays_per_week())
+            print(new_book.get_birthdays_per_week())
         elif command == "all":
-            for record in record.data.values():
+            for record in new_book.values():
                 print(record)
         else:
             print("Invalid command.")
