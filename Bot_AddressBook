@@ -25,7 +25,7 @@ class Phone(Field): # for storing a phone number
         return phone.isdigit() and len(phone) == 10
     
 
-class Birthday(Field): # for colleagues' birthday
+class Birthday(Field): # for birthday of colleagues
     def __init__(self, birthday):
         if self.validation(birthday):
             self.birthday = birthday
